@@ -1,79 +1,63 @@
-name: 🌊 Tidal SR01 - 30min PNG Direct to Repo (PRODUCTION)
+name: 🌊 Tidal SR01 Analysis Hourly
 
 on:
   schedule:
-    - cron: '*/30 * * * *'  # Every 30 minutes (:00, :30)
-  workflow_dispatch:
+    # CRON: 0 * * * * = setiap jam :00
+    - cron: '0 * * * *'
+  workflow_dispatch:  # Manual trigger button
+  push:
+    branches: [ main ]
 
 jobs:
-  tidal-analysis:
+  analyze:
     runs-on: ubuntu-latest
     permissions:
-      contents: write  # Git commit permission
+      contents: write  # Untuk releases
     
     steps:
     # 1. Checkout code
-    - name: Checkout repo
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0  # Full history for rebase
+    - uses: actions/checkout@v4
     
-    # 2. Python setup
-    - name: Setup Python 3.11
+    # 2. Setup Python 3.11
+    - name: Set Python 3.11
       uses: actions/setup-python@v5
       with:
         python-version: '3.11'
     
     # 3. Install dependencies
-    - name: Install requirements
+    - name: Install Python deps
       run: |
-        pip install --upgrade pip
-        pip install pandas numpy matplotlib requests
-        pip install -r requirements.txt || echo "No reqs file"
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
     
-    # 4. Run tidal analysis (tolerate minor errors)
-        - name: Generate PNG + CSV
+    # 4. Run Tidal Analysis
+    - name: 🏄 Run Tidal Analysis
       run: python tidal_analysis.py
-      continue-on-error: true
     
-    # 5. Verify files created
-    - name: List generated files
-      run: |
-        echo "=== FILES GENERATED ==="
-        ls -la *.csv *.png || echo "No PNG!"
-        echo "=== END ==="
-    
-    # 6. Copy to repo root (DIRECT PNG ACCESS!)
-    - name: Copy to plots directory
-      run: |
-        mkdir -p plots
-        cp *.png *.csv plots/ || echo "No files to copy"
-        ls -la plots/
-    
-    # 7. Git commit PNGs to main (SAFE PUSH)
-    - name: Commit PNGs to repo
-      run: |
-        git config --local user.email "actions@github.com"
-        git config --local user.name "Tidal Auto-Bot"
-        git add plots/
-        git pull --rebase --autostash || echo "Pull skipped"
-        timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-        git commit -m "Hourly tidal update #${{ github.run_number }} (${timestamp})" || echo "No changes"
-        git push --force-with-lease || echo "Push skipped"
-    
-    # 8. ZIP backup
-    - name: Upload ZIP artifact
-      uses: actions/upload-artifact@v4
+    # 5. Create Release dengan timestamp
+    - name: 📦 Create Release
+      id: create_release
+      uses: softprops/action-gh-release@v2
       with:
-        name: tidal-files-${{ github.run_number }}
-        path: |
-          plots/*
-          *.csv
-          *.png
+        tag_name: ${{ github.run_number }}
+        name: Tidal Analysis ${{ github.run_number }} (${{ github.event_name }})
+        body: |
+          **Run at:** ${{ github.event.head_commit.message || github.run_number }}
+          **Files:** CSV + 4 PNG plots
+          **Data:** Entry 1859+, 10min interval
+        draft: false
+        prerelease: false
+        files: |
+          field2_tidal*.csv
+          plot*.png
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     
-    # 9. Success summary
-    - name: Summary
-      run: |
-        echo "✅ SUCCESS! PNGs committed to repo root"
-        echo "📱 Direct access: https://github.com/${{ github.repository }}/tree/main/plots"
-        echo "🖼️  Raw PNG: https://raw.githubusercontent.com/${{ github.repository }}/main/plots/plot4_negdeviasi.png"
+    # 6. Notify (opsional)
+    - name: 💬 Discord Notify
+      if: always()
+      uses: 8398a7/action-slack@v3
+      with:
+        status: ${{ job.status }}
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
