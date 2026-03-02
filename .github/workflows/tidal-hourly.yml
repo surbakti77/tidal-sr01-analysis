@@ -26,7 +26,8 @@ jobs:
     - name: Install requirements
       run: |
         pip install --upgrade pip
-        pip install -r requirements.txt
+        pip install pandas numpy matplotlib requests
+        pip install -r requirements.txt || echo "No reqs file"
     
     # 4. Run tidal analysis
     - name: Generate PNG + CSV
