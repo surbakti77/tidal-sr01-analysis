@@ -1,35 +1,19 @@
-name: 🌊 Tidal SR01 Hourly Fixed
-
+name: 🌊 Tidal SR01 Auto
 on:
-  schedule:
-    - cron: '0 * * * *'
+  schedule: - cron: '0 * * * *'
   workflow_dispatch:
-
 jobs:
   analyze:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    
-    - name: Setup Python
-      uses: actions/setup-python@v5
+    - uses: actions/setup-python@v5
+      with: python-version: '3.11'
+    - run: pip install -r requirements.txt
+    - run: python tidal_analysis.py
+    - uses: actions/upload-artifact@v4
       with:
-        python-version: '3.11'
-    
-    - name: Install requirements
-      run: pip install -r requirements.txt
-    
-    - name: Run analysis
-      run: |
-        ls -la
-        python tidal_analysis.py
-    
-    - name: Create release
-      uses: softprops/action-gh-release@v2
-      with:
-        tag_name: hourly-${{ github.run_number }}
-        files: |
+        name: tidal-sr01-${{ github.run_number }}
+        path: |
           field2_tidal*.csv
-          plot*.png
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          *.png
