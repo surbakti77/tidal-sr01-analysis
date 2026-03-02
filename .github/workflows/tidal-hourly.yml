@@ -52,10 +52,13 @@ jobs:
       run: |
         git config --local user.email "actions@github.com"
         git config --local user.name "Tidal Auto-Bot"
-        git add plots/* || echo "No new files"
-        timestamp=$(date -u)
-        git commit -m "Hourly tidal update #${{ github.run_number }} (${timestamp})" || echo "No changes to commit"
-        git push
+        mkdir -p plots
+        cp *.png *.csv plots/ || echo "No files"
+        git add plots/
+        git pull --rebase --autostash || echo "Pull skipped"
+        timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+        git commit -m "Hourly tidal update #${{ github.run_number }} (${timestamp})" || echo "No changes"
+        git push --force-with-lease || echo "Push skipped"
     
     # 8. ZIP backup (optional)
     - name: Upload ZIP artifact
