@@ -1,4 +1,4 @@
-name: 🌊 Tidal SR01 Auto
+name: 🌊 Tidal SR01 Complete
 on:
   schedule: - cron: '0 * * * *'
   workflow_dispatch:
@@ -7,13 +7,36 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    - uses: actions/setup-python@v5
+    
+    - name: Setup Python
+      uses: actions/setup-python@v5
       with: python-version: '3.11'
-    - run: pip install -r requirements.txt
-    - run: python tidal_analysis.py
-    - uses: actions/upload-artifact@v4
+    
+    - name: Install deps
+      run: pip install -r requirements.txt
+    
+    - name: Run analysis
+      run: python tidal_analysis.py
+    
+    - name: Create plots folder
+      run: mkdir -p latest_plots
+    
+    - name: Copy ALL files
+      run: |
+        cp *.csv *.png latest_plots/
+        ls -la latest_plots/
+    
+    - name: Commit to repo
+      run: |
+        git config --local user.email "actions@github.com"
+        git config --local user.email "actions@github.com"
+        git add latest_plots/*
+        git commit -m "Update tidal plots #${{ github.run_number }} $(date)" || echo "No change"
+        git push
+    
+    - name: ZIP artifacts
+      uses: actions/upload-artifact@v4
       with:
-        name: tidal-sr01-${{ github.run_number }}
+        name: tidal-complete-${{ github.run_number }}
         path: |
-          field2_tidal*.csv
-          *.png
+          latest_plots/*
