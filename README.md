@@ -1,1 +1,1 @@
-Perintah
+Perintah membaca data pasang surut
