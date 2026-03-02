@@ -1,42 +1,74 @@
-name: 🌊 Tidal SR01 Complete
+name: 🌊 Tidal SR01 - PNG Direct to Repo
+
 on:
-  schedule: - cron: '0 * * * *'
+  schedule:
+    - cron: '0 * * * *'  # Every hour
   workflow_dispatch:
+
 jobs:
-  analyze:
+  tidal-analysis:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write  # Git commit permission
+    
     steps:
-    - uses: actions/checkout@v4
+    # 1. Checkout code
+    - name: Checkout repo
+      uses: actions/checkout@v4
     
-    - name: Setup Python
+    # 2. Python setup
+    - name: Setup Python 3.11
       uses: actions/setup-python@v5
-      with: python-version: '3.11'
+      with:
+        python-version: '3.11'
     
-    - name: Install deps
-      run: pip install -r requirements.txt
+    # 3. Install dependencies
+    - name: Install requirements
+      run: |
+        pip install --upgrade pip
+        pip install -r requirements.txt
     
-    - name: Run analysis
+    # 4. Run tidal analysis
+    - name: Generate PNG + CSV
       run: python tidal_analysis.py
     
-    - name: Create plots folder
-      run: mkdir -p latest_plots
-    
-    - name: Copy ALL files
+    # 5. Verify files created
+    - name: List generated files
       run: |
-        cp *.csv *.png latest_plots/
-        ls -la latest_plots/
+        echo "=== FILES GENERATED ==="
+        ls -la *.csv *.png || echo "No PNG!"
+        echo "=== END ==="
     
-    - name: Commit to repo
+    # 6. Copy to repo root (DIRECT PNG ACCESS!)
+    - name: Copy to root directory
+      run: |
+        mkdir -p plots
+        cp *.png plots/ || echo "No PNG to copy"
+        cp *.csv plots/
+        ls -la plots/
+    
+    # 7. Git commit PNGs to main branch
+    - name: Commit PNGs to repo
       run: |
         git config --local user.email "actions@github.com"
-        git config --local user.email "actions@github.com"
-        git add latest_plots/*
-        git commit -m "Update tidal plots #${{ github.run_number }} $(date)" || echo "No change"
+        git config --local user.name "Tidal Auto-Bot"
+        git add plots/* || echo "No new files"
+        timestamp=$(date -u)
+        git commit -m "Hourly tidal update #${{ github.run_number }} (${timestamp})" || echo "No changes to commit"
         git push
     
-    - name: ZIP artifacts
+    # 8. ZIP backup (optional)
+    - name: Upload ZIP artifact
       uses: actions/upload-artifact@v4
       with:
-        name: tidal-complete-${{ github.run_number }}
+        name: tidal-files-${{ github.run_number }}
         path: |
-          latest_plots/*
+          plots/*
+          *.csv
+          *.png
+    
+    # 9. Notify success
+    - name: Summary
+      run: |
+        echo "✅ SUCCESS! PNGs committed to repo root"
+        echo "📱 Direct access: https://github.com/${{ github.repository }}/tree/main/plots"
