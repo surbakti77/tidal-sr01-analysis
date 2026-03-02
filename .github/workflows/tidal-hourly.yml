@@ -32,8 +32,8 @@ jobs:
         pip install -r requirements.txt || echo "No reqs file"
     
     # 4. Run tidal analysis (tolerate minor errors)
-    - name: Generate PNG + CSV
-      run: python tidal_analysis.py || true
+        - name: Generate PNG + CSV
+      run: python tidal_analysis.py
       continue-on-error: true
     
     # 5. Verify files created
