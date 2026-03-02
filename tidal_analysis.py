@@ -91,19 +91,23 @@ plt.savefig('tidal_plots_combined.png', dpi=150, bbox_inches='tight')
 plt.close()
 
 # Individual plots (GitHub likes)
-for i, (col, fname) in enumerate([
-    ('field2', 'plot1_fielddata.png'),
-    ('field2_neg', 'plot2_tinggiair.png'),
-    ('field2_deviasi', 'plot3_deviasi.png'),
-    ('field2_neg_deviasi', 'plot4_negdeviasi.png')
+for i, (col, fname, title) in enumerate([
+    ('field2', 'plot1_fielddata.png', 'Jarak Alat'),
+    ('field2_neg', 'plot2_tinggiair.png', 'Tinggi Air'),
+    ('field2_deviasi', 'plot3_deviasi.png', 'Deviasi Alat'),
+    ('field2_neg_deviasi', 'plot4_negdeviasi.png', 'Elevasi Muka Air Laut (m)')
 ]):
     plt.figure(figsize=(12,6))
     plt.plot(extract_data.datetime, extract_data[col], lw=2)
     plt.title(f'Tidal SR01 {col}')
-    plt.xlabel('Waktu WIB')
-    plt.ylabel('Meter')
+    plt.xlabel('Tanggal/Bulan/Tahun Jam:Menit')
+    plt.ylabel('Elevasi Muka Air (Meter)')
     plt.xticks(rotation=45)
     plt.grid(alpha=0.3)
+    # FORMAT TANGGAL DD/MM/YYYY HH:MM
+    from matplotlib.dates import DateFormatter
+    plt.gca().xaxis.set_major_formatter(DateFormatter('%d/%m/%Y %H:%M'))
+    
     plt.tight_layout()
     plt.savefig(fname, dpi=150, bbox_inches='tight')
     plt.close()
